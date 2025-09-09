@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Visit Task</title>
+<style>
+  :root {
+    --medallion: #c9a227;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: #000;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  #topBar {
+    background: #fff;
+    color: #000;
+    font-size: 22px;
+    font-weight: 600;
+    text-align: center;
+    padding: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  #progressContainer {
+    height: 4px;
+    width: 100%;
+    background: #222;
+  }
+  #progressBar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #3498db, #1abc9c);
+    transition: width 1s linear, background 0.5s linear;
+  }
+
+  #frame {
+    flex: 1;
+    width: 100%;
+    border: none;
+  }
+
+  .empty-wrap {
+    display: none;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    perspective: 1000px;
+  }
+
+  .empty-box {
+    background: var(--medallion);
+    color: #fff;
+    border-radius: 20px;
+    padding: 24px 28px;
+    min-width: 260px;
+    max-width: min(90vw, 720px);
+    text-align: center;
+    box-shadow:
+      0 10px 25px rgba(201, 162, 39, 0.25),
+      inset 0 1px 0 rgba(255,255,255,0.25);
+    transform: rotateX(0deg) rotateY(0deg) translateZ(0);
+    will-change: transform;
+  }
+
+  .empty-text {
+    font-size: clamp(18px, 4vw, 28px);
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+    margin: 0;
+  }
+
+  .typing-caret::after {
+    content: "▌";
+    margin-left: 6px;
+    animation: blink 0.9s steps(1) infinite;
+  }
+  @keyframes blink {
+    0%, 49% { opacity: 1; }
+    50%, 100% { opacity: 0; }
+  }
+
+  .float-3d {
+    animation: floatUpDown 3.5s ease-in-out infinite, tilt 6s ease-in-out infinite;
+  }
+  @keyframes floatUpDown {
+    0%   { transform: translateY(0) rotateX(0deg) rotateY(0deg); }
+    50%  { transform: translateY(-10px) rotateX(0deg) rotateY(0deg); }
+    100% { transform: translateY(0) rotateX(0deg) rotateY(0deg); }
+  }
+  @keyframes tilt {
+    0%   { transform: translateY(0) rotateX(0.5deg) rotateY(-0.5deg); }
+    25%  { transform: translateY(-5px) rotateX(-1deg) rotateY(1deg); }
+    50%  { transform: translateY(-10px) rotateX(1deg) rotateY(-1deg); }
+    75%  { transform: translateY(-5px) rotateX(-1deg) rotateY(0.5deg); }
+    100% { transform: translateY(0) rotateX(0.5deg) rotateY(-0.5deg); }
+  }
+</style>
+</head>
+<body>
+  <div id="topBar">Loading...</div>
+  <div id="progressContainer"><div id="progressBar"></div></div>
+  <iframe id="frame"></iframe>
+
+  <div id="emptyWrap" class="empty-wrap">
+    <div id="emptyBox" class="empty-box">
+      <p id="emptyText" class="empty-text typing-caret"></p>
+    </div>
+  </div>
+
+<script>
+function base64DecodeUtf8(b64) {
+  try {
+    const bin = atob(b64);
+    const bytes = Uint8Array.from(bin, ch => ch.charCodeAt(0));
+    const dec = new TextDecoder("utf-8", { fatal: false });
+    return dec.decode(bytes);
+  } catch (e) {
+    return null;
+  }
+}
+
+function playEmptyState(text) {
+  const wrap = document.getElementById('emptyWrap');
+  const box  = document.getElementById('emptyBox');
+  const el   = document.getElementById('emptyText');
+
+  wrap.style.display = 'flex';
+  el.textContent = '';
+
+  let i = 0;
+  const speed = 70;
+  const typer = setInterval(() => {
+    el.textContent += text.charAt(i++);
+    if (i >= text.length) {
+      clearInterval(typer);
+      el.classList.remove('typing-caret');
+      box.classList.add('float-3d');
+    }
+  }, speed);
+}
+
+async function sendCompletion(userId, taskId, url) {
+  try {
+    await fetch("/api/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userid: userId, taskid: taskId })
+    });
+  } catch (e) {
+    console.error("/api/send POST failed:", e);
+  }
+}
+
+const params      = new URLSearchParams(window.location.search);
+const token       = params.get("token");
+
+const topBar      = document.getElementById("topBar");
+const frame       = document.getElementById("frame");
+const progressBar = document.getElementById("progressBar");
+
+function showNothing() {
+  frame.style.display = "none";
+  document.getElementById('progressContainer').style.display = 'none';
+  playEmptyState("nothing to do here");
+  topBar.innerText = "NOTHING TO DO HERE";
+}
+
+(function init() {
+  if (!token) { showNothing(); return; }
+
+  const decoded = base64DecodeUtf8(token);
+  if (!decoded || !decoded.includes("#-#")) { showNothing(); return; }
+
+  const parts = decoded.split("#-#");
+  if (parts.length !== 4) { showNothing(); return; }
+
+  const userId     = parts[0];
+  const taskId     = parts[1];
+  const duration   = parseInt(parts[2], 10);
+  const redirectUrl= parts[3];
+
+  if (!userId || !taskId || !Number.isFinite(duration) || !redirectUrl) {
+    showNothing();
+    return;
+  }
+
+  frame.style.display = "block";
+  document.getElementById('progressContainer').style.display = 'block';
+  frame.src = redirectUrl;
+
+  let remaining = Math.max(0, duration);
+  topBar.innerText = `Stay on this page for ${remaining} seconds to complete the task`;
+
+  const interval = setInterval(async () => {
+    remaining--;
+    if (remaining >= 0) {
+      topBar.innerText = `Stay on this page for ${remaining} seconds to complete the task`;
+      const progressPercent = ((duration - remaining) / duration) * 100;
+      progressBar.style.width = Math.min(100, Math.max(0, progressPercent)) + "%";
+      if (progressPercent > 70) {
+        progressBar.style.background = "#2ecc71";
+      }
+    }
+    if (remaining <= 0) {
+      clearInterval(interval);
+      progressBar.style.width = "100%";
+      progressBar.style.background = "#2ecc71";
+
+      await sendCompletion(userId, taskId);
+
+      setTimeout(() => {
+        window.location.href = redirectUrl;
+      }, 1200);
+    }
+  }, 1000);
+})();
+</script>
+</body>
+</html>

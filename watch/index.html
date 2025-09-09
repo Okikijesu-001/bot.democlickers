@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Visit Task</title>
+<style>
+  body {
+    margin: 0;
+    background: #000;
+    font-family: sans-serif;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+  #topBar {
+    background: #fff;
+    color: #000;
+    font-size: 22px;
+    font-weight: 600;
+    text-align: center;
+    padding: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  #progressContainer {
+    height: 4px;
+    width: 100%;
+    background: #222;
+  }
+  #progressBar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #3498db, #1abc9c);
+    transition: width 1s linear, background 0.5s linear;
+  }
+  #frame {
+    flex: 1;
+    width: 100%;
+    border: none;
+    display: none;
+  }
+
+  /* Nothing to do here design */
+  .empty-wrap {
+    display: none;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .empty-box {
+    background: #c9a227;
+    color: #fff;
+    border-radius: 20px;
+    padding: 20px 28px;
+    min-width: 260px;
+    text-align: center;
+    box-shadow:
+      0 10px 25px rgba(201, 162, 39, 0.25),
+      inset 0 1px 0 rgba(255,255,255,0.25);
+    transform: rotateX(0deg) rotateY(0deg) translateZ(0);
+  }
+
+  .empty-text {
+    font-size: clamp(18px, 4vw, 28px);
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+    margin: 0;
+  }
+
+  .typing-caret::after {
+    content: "▌";
+    margin-left: 6px;
+    animation: blink 0.9s steps(1) infinite;
+  }
+  @keyframes blink {
+    0%, 49% { opacity: 1; }
+    50%, 100% { opacity: 0; }
+  }
+
+  .float-3d {
+    animation: floatUpDown 3.5s ease-in-out infinite, tilt 6s ease-in-out infinite;
+  }
+  @keyframes floatUpDown {
+    0%   { transform: translateY(0) rotateX(0deg) rotateY(0deg); }
+    50%  { transform: translateY(-10px) rotateX(0deg) rotateY(0deg); }
+    100% { transform: translateY(0) rotateX(0deg) rotateY(0deg); }
+  }
+  @keyframes tilt {
+    0%   { transform: rotateX(0.5deg) rotateY(-0.5deg); }
+    25%  { transform: rotateX(-1deg) rotateY(1deg); }
+    50%  { transform: rotateX(1deg) rotateY(-1deg); }
+    75%  { transform: rotateX(-1deg) rotateY(0.5deg); }
+    100% { transform: rotateX(0.5deg) rotateY(-0.5deg); }
+  }
+</style>
+</head>
+<body>
+<div id="topBar">Loading...</div>
+<div id="progressContainer"><div id="progressBar"></div></div>
+<iframe id="frame" onload="frameLoaded()" onerror="frameError()"></iframe>
+
+<!-- Nothing to do here box -->
+<div id="emptyWrap" class="empty-wrap">
+  <div id="emptyBox" class="empty-box">
+    <p id="emptyText" class="empty-text typing-caret"></p>
+  </div>
+</div>
+
+<script>
+function base64Decode(str) {
+  try {
+    return decodeURIComponent(escape(window.atob(str)));
+  } catch (e) {
+    return null;
+  }
+}
+
+function frameLoaded() {
+  document.getElementById("frame").style.display = "block";
+}
+
+function frameError() {
+  document.getElementById("frame").style.display = "none";
+  clearInterval(countdown);
+  document.getElementById("topBar").innerText = "Webpage not available";
+  document.getElementById("progressBar").style.width = "0%";
+}
+
+function showEmptyState() {
+  const wrap = document.getElementById('emptyWrap');
+  const box  = document.getElementById('emptyBox');
+  const el   = document.getElementById('emptyText');
+
+  document.getElementById("topBar").style.display = "none";
+  document.getElementById("progressContainer").style.display = "none";
+  wrap.style.display = 'flex';
+  el.textContent = '';
+
+  let i = 0;
+  const text = "nothing to do here";
+  const speed = 70;
+  const typer = setInterval(() => {
+    el.textContent += text.charAt(i++);
+    if (i >= text.length) {
+      clearInterval(typer);
+      el.classList.remove('typing-caret');
+      box.classList.add('float-3d');
+    }
+  }, speed);
+}
+
+const params = new URLSearchParams(window.location.search);
+const token = params.get("token");
+
+const topBar = document.getElementById("topBar");
+const frame = document.getElementById("frame");
+const progressBar = document.getElementById("progressBar");
+
+if (!token) {
+  showEmptyState();
+} else {
+  const decoded = base64Decode(token);
+  if (!decoded || !decoded.includes("#-#")) {
+    showEmptyState();
+  } else {
+    const parts = decoded.split("#-#");
+    if (parts.length !== 4) {
+      showEmptyState();
+    } else {
+      const userId = parts[0];
+      const taskId = parts[1];
+      const duration = parseInt(parts[2]);
+      const redirectUrl = parts[3];
+
+      let remaining = duration;
+      topBar.innerText = `Stay on this page for ${remaining} seconds to complete the task`;
+
+      frame.src = redirectUrl;
+      frame.style.display = "block";
+
+      const countdown = setInterval(async () => {
+        remaining--;
+        if (remaining >= 0) {
+          topBar.innerText = `Stay on this page for ${remaining} seconds to complete the task`;
+          const progressPercent = ((duration - remaining) / duration) * 100;
+          progressBar.style.width = progressPercent + "%";
+          if (progressPercent > 70) {
+            progressBar.style.background = "#2ecc71";
+          }
+        }
+        if (remaining <= 0) {
+          clearInterval(countdown);
+          progressBar.style.width = "100%";
+          progressBar.style.background = "#2ecc71";
+
+          // Send completion to /api/send
+          try {
+            await fetch("/api/send", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ userid: userId, taskid: taskId })
+            });
+          } catch (e) {
+            console.error("Failed to send data", e);
+          }
+
+          setTimeout(() => {
+            window.location.href = redirectUrl;
+          }, 1500);
+        }
+      }, 1000);
+    }
+  }
+}
+</script>
+</body>
+</html>

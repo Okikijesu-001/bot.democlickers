@@ -1,0 +1,39 @@
+    document.getElementById("vpnBox").classList.remove("show");
+
+    setTimeout(() => { document.getElementById("vpnBox").style.display = "none"; }, 250);
+
+  });
+
+  // NO INTERNET OK: keep same behavior (fixed earlier)
+
+  document.getElementById("noInternetOkBtn").addEventListener("click", () => {
+
+    document.getElementById("noInternetBox").classList.remove("show");
+
+    setTimeout(() => { document.getElementById("noInternetBox").style.display = "none"; }, 250);
+
+  });
+
+  document.addEventListener("contextmenu", e => e.preventDefault());
+
+  document.addEventListener("keydown", function(e) {
+
+    // Prevent F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U
+
+    if (e.keyCode == 123 || 
+
+       (e.ctrlKey && e.shiftKey && (e.keyCode == 73 || e.keyCode == 74)) || 
+
+       (e.ctrlKey && e.keyCode == 85)) {
+
+      e.preventDefault();
+
+    }
+
+  });
+
+</script>
+
+</body>
+
+</html>

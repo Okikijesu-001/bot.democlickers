@@ -2,257 +2,118 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Photo Viewer</title>
 <style>
-  :root {
-    --medallion: #c9a227;
-  }
-
   body {
     margin: 0;
     background: #000;
-    font-family: system-ui, sans-serif;
-    text-align: center;
-    padding: 20px;
-    min-height: 100vh;
+    font-family: sans-serif;
     display: flex;
-    flex-direction: column;
-  }
-
-  h1 {
-    color: #fff;
-  }
-
-  /* Main photo container */
-  .photo-box {
-    margin: 15px auto;
-    background: #111;
-    padding: 15px;
-    border-radius: 10px;
-    max-width: 95%;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-  }
-
-  /* Grid layout for photos */
-  .photo-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 10px;
-    margin-top: 10px;
-  }
-
-  img {
-    width: 100%;
-    height: auto;
-    border-radius: 6px;
-    display: block;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.4);
-    object-fit: cover;
-  }
-
-  .loader {
-    display: inline-block;
-    margin: 20px 0;
-  }
-  .loader .circle {
-    width: 60px;
-    height: 60px;
-    position: relative;
-    animation: rotate 1s linear infinite;
-    margin: auto;
-  }
-  .loader .circle span {
-    position: absolute;
-    width: 8px;
-    height: 8px;
-    background: limegreen;
-    border-radius: 50%;
-  }
-  .loader .circle span:nth-child(1) { top: 0; left: 26px; }
-  .loader .circle span:nth-child(2) { top: 8px; left: 45px; }
-  .loader .circle span:nth-child(3) { top: 26px; left: 52px; }
-  .loader .circle span:nth-child(4) { top: 45px; left: 45px; }
-  .loader .circle span:nth-child(5) { top: 52px; left: 26px; }
-  .loader .circle span:nth-child(6) { top: 45px; left: 8px; }
-  .loader .circle span:nth-child(7) { top: 26px; left: 0; }
-  .loader .circle span:nth-child(8) { top: 8px; left: 8px; }
-
-  @keyframes rotate {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-
-  .error-text {
-    color: red;
-    font-size: 14px;
-    margin-top: 5px;
-  }
-
-  /* Nothing to do here animation */
-  .empty-wrap {
-    display: none;
-    flex: 1;
-    align-items: center;
     justify-content: center;
-    perspective: 1000px;
+    align-items: center;
+    flex-direction: column;
+    height: 100vh;
+    overflow-y: auto;
   }
-
-  .empty-box {
-    background: var(--medallion);
+  .photo-container {
+    width: 100%;
+    max-width: 500px;
+    margin: 20px auto;
+    border-radius: 20px;
+    overflow: hidden;
+    background: #b59a3a;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+  }
+  .photo-container img {
+    width: 100%;
+    border-radius: 15px;
+    display: block;
+  }
+  .center-message {
+    display: none;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    font-size: 28px;
+    padding: 20px 40px;
+    background: #b59a3a;
     color: #fff;
     border-radius: 20px;
-    padding: 24px 28px;
-    min-width: 260px;
-    max-width: min(90vw, 720px);
-    text-align: center;
-    box-shadow:
-      0 10px 25px rgba(201, 162, 39, 0.25),
-      inset 0 1px 0 rgba(255,255,255,0.25);
-    transform: rotateX(0deg) rotateY(0deg) translateZ(0);
-    will-change: transform;
+    animation: float 3s ease-in-out infinite;
+    position: absolute;
+    white-space: pre;
   }
-
-  .empty-text {
-    font-size: clamp(18px, 4vw, 28px);
-    font-weight: 700;
-    letter-spacing: 0.4px;
-    white-space: nowrap;
-    margin: 0;
-  }
-
-  .typing-caret::after {
-    content: "▌";
-    margin-left: 6px;
-    animation: blink 0.9s steps(1) infinite;
-  }
-  @keyframes blink {
-    0%, 49% { opacity: 1; }
-    50%, 100% { opacity: 0; }
-  }
-
-  .float-3d {
-    animation: floatUpDown 3.5s ease-in-out infinite, tilt 6s ease-in-out infinite;
-  }
-  @keyframes floatUpDown {
-    0%   { transform: translateY(0) rotateX(0deg) rotateY(0deg); }
-    50%  { transform: translateY(-10px) rotateX(0deg) rotateY(0deg); }
-    100% { transform: translateY(0) rotateX(0deg) rotateY(0deg); }
-  }
-  @keyframes tilt {
-    0%   { transform: translateY(0) rotateX(0.5deg) rotateY(-0.5deg); }
-    25%  { transform: translateY(-5px) rotateX(-1deg) rotateY(1deg); }
-    50%  { transform: translateY(-10px) rotateX(1deg) rotateY(-1deg); }
-    75%  { transform: translateY(-5px) rotateX(-1deg) rotateY(0.5deg); }
-    100% { transform: translateY(0) rotateX(0.5deg) rotateY(-0.5deg); }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
   }
 </style>
 </head>
 <body>
-  <h1>Photo Viewer</h1>
-  <div id="content"></div>
-
-  <!-- Nothing to do here animation -->
-  <div id="emptyWrap" class="empty-wrap">
-    <div id="emptyBox" class="empty-box">
-      <p id="emptyText" class="empty-text typing-caret"></p>
-    </div>
-  </div>
+<div id="centerMessage" class="center-message"></div>
+<div id="photos"></div>
 
 <script>
-const BOT_TOKEN = "YOUR_BOT_TOKEN_HERE";
-
-function base64DecodeUtf8(b64) {
+function base64Decode(str) {
   try {
-    const bin = atob(b64);
-    const bytes = Uint8Array.from(bin, ch => ch.charCodeAt(0));
-    const dec = new TextDecoder("utf-8", { fatal: false });
-    return dec.decode(bytes);
+    return decodeURIComponent(escape(window.atob(str)));
   } catch (e) {
     return null;
   }
 }
 
-function createLoader() {
-  const loaderDiv = document.createElement('div');
-  loaderDiv.className = 'loader';
-  const circleDiv = document.createElement('div');
-  circleDiv.className = 'circle';
-  for (let i = 0; i < 8; i++) circleDiv.appendChild(document.createElement('span'));
-  loaderDiv.appendChild(circleDiv);
-  return loaderDiv;
-}
-
-function playEmptyState(text) {
-  const wrap = document.getElementById('emptyWrap');
-  const box  = document.getElementById('emptyBox');
-  const el   = document.getElementById('emptyText');
-
-  wrap.style.display = 'flex';
-  el.textContent = '';
-
+function showCenterMessage(msg) {
+  const center = document.getElementById("centerMessage");
+  center.innerText = "";
+  center.style.display = "flex";
   let i = 0;
-  const speed = 70;
-  const typer = setInterval(() => {
-    el.textContent += text.charAt(i++);
-    if (i >= text.length) {
-      clearInterval(typer);
-      el.classList.remove('typing-caret');
-      box.classList.add('float-3d');
-    }
-  }, speed);
-}
-
-async function getFilePath(fileId) {
-  const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getFile?file_id=${fileId}`);
-  const data = await res.json();
-  if (data.ok) return data.result.file_path;
-  return null;
-}
-
-async function showPhotos(fileIds) {
-  const contentDiv = document.getElementById('content');
-
-  if (!fileIds || !fileIds.length) {
-    playEmptyState("nothing to do here");
-    return;
-  }
-
-  // Main container with loader
-  const photoBox = document.createElement('div');
-  photoBox.className = 'photo-box';
-  const loader = createLoader();
-  photoBox.appendChild(loader);
-  contentDiv.appendChild(photoBox);
-
-  const grid = document.createElement('div');
-  grid.className = 'photo-grid';
-
-  for (let fileId of fileIds) {
-    const filePath = await getFilePath(fileId);
-    if (filePath) {
-      const img = document.createElement('img');
-      img.src = `https://api.telegram.org/file/bot${BOT_TOKEN}/${filePath}`;
-      grid.appendChild(img);
+  function typeText() {
+    if (i < msg.length) {
+      center.innerText += msg[i];
+      i++;
+      setTimeout(typeText, 100);
     }
   }
-
-  loader.remove();
-  photoBox.appendChild(grid);
+  typeText();
 }
 
-// Get token from URL and decode
 const params = new URLSearchParams(window.location.search);
 const token = params.get("token");
+
+const photosDiv = document.getElementById("photos");
+
 if (!token) {
-  playEmptyState("nothing to do here");
+  showCenterMessage("Nothing to do here");
 } else {
-  const decoded = base64DecodeUtf8(token);
-  if (!decoded) {
-    playEmptyState("nothing to do here");
+  const decoded = base64Decode(token);
+  if (!decoded || !decoded.includes("#-#")) {
+    showCenterMessage("Nothing to do here");
   } else {
-    const fileIds = decoded.split("#-#").filter(Boolean);
-    showPhotos(fileIds);
+    let photoList;
+    try {
+      photoList = JSON.parse(decoded.split("#-#")[1]); // Expecting an array of photo URLs
+    } catch (e) {
+      photoList = null;
+    }
+
+    if (!photoList || photoList.length === 0) {
+      showCenterMessage("Nothing to do here");
+    } else {
+      document.getElementById("centerMessage").style.display = "none";
+      photosDiv.innerHTML = "";
+      photoList.forEach(url => {
+        const box = document.createElement("div");
+        box.className = "photo-container";
+        const img = document.createElement("img");
+        img.src = url;
+        box.appendChild(img);
+        photosDiv.appendChild(box);
+      });
+    }
   }
 }
 </script>

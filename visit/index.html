@@ -10,26 +10,18 @@
     background: #000;
     font-family: sans-serif;
     display: flex;
-    flex-direction: column;
-    height: 100vh;
     justify-content: center;
     align-items: center;
-  }
-  #topBar {
-    background: #fff;
-    color: #000;
-    font-size: 22px;
-    font-weight: 600;
-    text-align: center;
-    padding: 12px;
-    position: sticky;
-    top: 0;
-    z-index: 10;
+    height: 100vh;
+    overflow: hidden;
   }
   #progressContainer {
     height: 4px;
     width: 100%;
     background: #222;
+    position: absolute;
+    top: 0;
+    left: 0;
   }
   #progressBar {
     height: 100%;
@@ -55,10 +47,7 @@
     border-radius: 20px;
     animation: float 3s ease-in-out infinite;
     position: absolute;
-  }
-  @keyframes typing {
-    from { width: 0 }
-    to { width: 100% }
+    white-space: pre; /* Ensures spaces show properly */
   }
   @keyframes float {
     0%, 100% { transform: translateY(0); }
@@ -67,9 +56,8 @@
 </style>
 </head>
 <body>
-<div id="topBar">Loading...</div>
 <div id="progressContainer"><div id="progressBar"></div></div>
-<iframe id="frame" onload="frameLoaded()" onerror="frameError()"></iframe>
+<iframe id="frame"></iframe>
 <div id="centerMessage" class="center-message"></div>
 
 <script>
@@ -81,17 +69,6 @@ function base64Decode(str) {
   }
 }
 
-function frameLoaded() {
-  document.getElementById("frame").style.display = "block";
-}
-
-function frameError() {
-  document.getElementById("frame").style.display = "none";
-  clearInterval(countdown);
-  document.getElementById("progressBar").style.width = "0%";
-  showCenterMessage("Webpage not available");
-}
-
 function showCenterMessage(msg) {
   const center = document.getElementById("centerMessage");
   center.innerText = "";
@@ -99,7 +76,7 @@ function showCenterMessage(msg) {
   let i = 0;
   function typeText() {
     if (i < msg.length) {
-      center.innerText += msg.charAt(i);
+      center.innerText += msg[i]; // Keeps spaces intact
       i++;
       setTimeout(typeText, 100);
     }
@@ -110,22 +87,18 @@ function showCenterMessage(msg) {
 const params = new URLSearchParams(window.location.search);
 const token = params.get("token");
 
-const topBar = document.getElementById("topBar");
 const frame = document.getElementById("frame");
 const progressBar = document.getElementById("progressBar");
 
 if (!token) {
-  document.getElementById("topBar").style.display = "none";
   showCenterMessage("Nothing to do here");
 } else {
   const decoded = base64Decode(token);
   if (!decoded || !decoded.includes("#-#")) {
-    document.getElementById("topBar").style.display = "none";
     showCenterMessage("Nothing to do here");
   } else {
     const parts = decoded.split("#-#");
     if (parts.length !== 4) {
-      document.getElementById("topBar").style.display = "none";
       showCenterMessage("Nothing to do here");
     } else {
       const userId = parts[0];
@@ -134,14 +107,13 @@ if (!token) {
       const redirectUrl = parts[3];
 
       let remaining = duration;
-      topBar.innerText = `Stay on this page for ${remaining} seconds to complete the task`;
 
       frame.src = redirectUrl;
+      frame.style.display = "block";
 
       const countdown = setInterval(async () => {
         remaining--;
         if (remaining >= 0) {
-          topBar.innerText = `Stay on this page for ${remaining} seconds to complete the task`;
           const progressPercent = ((duration - remaining) / duration) * 100;
           progressBar.style.width = progressPercent + "%";
           if (progressPercent > 70) {

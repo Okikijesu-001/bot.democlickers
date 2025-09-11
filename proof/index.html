@@ -58,6 +58,8 @@
 <div id="photos"></div>
 
 <script>
+const BOT_TOKEN = "8002198152:AAGj2G0p8teweKO57u0RTTTB7miaRRjqQBI"; // ⚠️ Anyone can see this!
+
 function base64Decode(str) {
   try {
     return decodeURIComponent(escape(window.atob(str)));
@@ -81,9 +83,37 @@ function showCenterMessage(msg) {
   typeText();
 }
 
+async function getFileUrl(fileId) {
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getFile?file_id=${fileId}`);
+    const data = await res.json();
+    if (data.ok) {
+      return `https://api.telegram.org/file/bot${BOT_TOKEN}/${data.result.file_path}`;
+    }
+  } catch (e) {
+    console.error(e);
+  }
+  return null;
+}
+
+async function displayPhotos(photoIds) {
+  const photosDiv = document.getElementById("photos");
+  photosDiv.innerHTML = "";
+  for (const id of photoIds) {
+    const url = await getFileUrl(id);
+    if (url) {
+      const box = document.createElement("div");
+      box.className = "photo-container";
+      const img = document.createElement("img");
+      img.src = url;
+      box.appendChild(img);
+      photosDiv.appendChild(box);
+    }
+  }
+}
+
 const params = new URLSearchParams(window.location.search);
 const token = params.get("token");
-const photosDiv = document.getElementById("photos");
 
 if (!token) {
   showCenterMessage("Nothing to do here");
@@ -92,25 +122,12 @@ if (!token) {
   if (!decoded || !decoded.includes("#-#")) {
     showCenterMessage("Nothing to do here");
   } else {
-    // Split into photo IDs
-    const photoList = decoded.split("#-#").filter(item => item.trim() !== "");
-
-    if (photoList.length === 0) {
+    const photoIds = decoded.split("#-#").filter(item => item.trim() !== "");
+    if (photoIds.length === 0) {
       showCenterMessage("Nothing to do here");
     } else {
       document.getElementById("centerMessage").style.display = "none";
-      photosDiv.innerHTML = "";
-      photoList.forEach(fileId => {
-        const box = document.createElement("div");
-        box.className = "photo-container";
-
-        // Replace <YOUR_BOT_TOKEN> with your bot token
-        const img = document.createElement("img");
-        img.src = `https://api.telegram.org/file/bot8002198152:AAGj2G0p8teweKO57u0RTTTB7miaRRjqQBI/${fileId}`;
-
-        box.appendChild(img);
-        photosDiv.appendChild(box);
-      });
+      displayPhotos(photoIds);
     }
   }
 }

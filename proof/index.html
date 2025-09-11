@@ -83,7 +83,6 @@ function showCenterMessage(msg) {
 
 const params = new URLSearchParams(window.location.search);
 const token = params.get("token");
-
 const photosDiv = document.getElementById("photos");
 
 if (!token) {
@@ -93,25 +92,22 @@ if (!token) {
   if (!decoded || !decoded.includes("#-#")) {
     showCenterMessage("Nothing to do here");
   } else {
-    let photoList;
-    try {
-      // Fix: Take last #-# part because JSON array is at the end
-      const parts = decoded.split("#-#");
-      photoList = JSON.parse(parts[parts.length - 1]);
-    } catch (e) {
-      photoList = null;
-    }
+    // Split into photo IDs
+    const photoList = decoded.split("#-#").filter(item => item.trim() !== "");
 
-    if (!photoList || !Array.isArray(photoList) || photoList.length === 0) {
+    if (photoList.length === 0) {
       showCenterMessage("Nothing to do here");
     } else {
       document.getElementById("centerMessage").style.display = "none";
       photosDiv.innerHTML = "";
-      photoList.forEach(url => {
+      photoList.forEach(fileId => {
         const box = document.createElement("div");
         box.className = "photo-container";
+
+        // Replace <YOUR_BOT_TOKEN> with your bot token
         const img = document.createElement("img");
-        img.src = url;
+        img.src = `https://api.telegram.org/file/bot<YOUR_BOT_TOKEN>/${fileId}`;
+
         box.appendChild(img);
         photosDiv.appendChild(box);
       });

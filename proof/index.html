@@ -95,12 +95,14 @@ if (!token) {
   } else {
     let photoList;
     try {
-      photoList = JSON.parse(decoded.split("#-#")[1]); // Expecting an array of photo URLs
+      // Fix: Take last #-# part because JSON array is at the end
+      const parts = decoded.split("#-#");
+      photoList = JSON.parse(parts[parts.length - 1]);
     } catch (e) {
       photoList = null;
     }
 
-    if (!photoList || photoList.length === 0) {
+    if (!photoList || !Array.isArray(photoList) || photoList.length === 0) {
       showCenterMessage("Nothing to do here");
     } else {
       document.getElementById("centerMessage").style.display = "none";

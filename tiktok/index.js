@@ -1,20 +1,15 @@
-import fetch from "node-fetch";
-
 export default async function handler(req, res) {
   try {
-    let { url } = req.query;
-
+    const url = req.query.url;
     if (!url) {
       return res.status(400).json({ error: "Missing url parameter" });
     }
 
-    // follow redirects
+    // Use native fetch in Node 18+ (Vercel supports this)
     const response = await fetch(url, { redirect: "follow" });
-
-    // final redirected URL
     const finalUrl = response.url;
 
-    // check if it’s video or account
+    // Decide link type
     let type = "unknown";
     if (finalUrl.includes("/video/")) {
       type = "video";
@@ -22,12 +17,12 @@ export default async function handler(req, res) {
       type = "account";
     }
 
-    return res.status(200).json({
+    res.status(200).json({
       input: url,
       final: finalUrl,
       type
     });
-  } catch (e) {
-    return res.status(500).json({ error: e.message });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 }

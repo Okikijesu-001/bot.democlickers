@@ -1,17 +1,14 @@
-export default async function handler(req) {
+export default async function handler(req, res) {
   try {
-    const { searchParams } = new URL(req.url, "http://localhost");
-    const url = searchParams.get("url");
-
+    const url = req.query.url;
     if (!url) {
-      return new Response(
-        JSON.stringify({ error: "Missing url parameter" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
+      return res.status(400).json({ error: "Missing url parameter" });
     }
 
-    // follow redirects using native fetch
+    // Use fetch with redirect: "manual" first
     const response = await fetch(url, { redirect: "follow" });
+
+    // final redirected URL
     const finalUrl = response.url;
 
     let type = "unknown";
@@ -21,14 +18,12 @@ export default async function handler(req) {
       type = "account";
     }
 
-    return new Response(
-      JSON.stringify({ input: url, final: finalUrl, type }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
-    );
+    res.status(200).json({
+      input: url,
+      final: finalUrl,
+      type
+    });
   } catch (err) {
-    return new Response(
-      JSON.stringify({ error: err.message }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    res.status(500).json({ error: err.message });
   }
 }

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Face Verification with Liveness</title>
+  <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+    video, img { max-width: 300px; margin: 10px auto; display: block; border-radius: 10px; }
+    button { padding: 10px 20px; margin: 10px; font-size: 16px; cursor: pointer; }
+    #result { font-size: 20px; margin-top: 15px; font-weight: bold; }
+    #status { margin-top: 10px; color: blue; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>Face Verification with Liveness</h1>
+
+  <h3>Step 1: Upload Reference Photo</h3>
+  <input type="file" id="referenceUpload" accept="image/*"><br>
+  <img id="referenceImg" />
+
+  <h3>Step 2: Turn Head for Liveness</h3>
+  <video id="video" autoplay muted></video><br>
+  <div id="status">Waiting for head turn...</div>
+
+  <h3>Step 3: Verify</h3>
+  <button id="verifyBtn">Verify Face</button>
+  <div id="result"></div>
+
+  <script>
+    let referenceDescriptor = null;
+    let selfieDescriptor = null;
+    let headMoved = false;
+
+    // Load models
+    Promise.all([
+      faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/face-api.js/models'),
+      faceapi.nets.faceRecognitionNet.loadFromUri('https://cdn.jsdelivr.net/npm/face-api.js/models'),
+      faceapi.nets.faceLandmark68Net.loadFromUri('https://cdn.jsdelivr.net/npm/face-api.js/models')
+    ]).then(startVideo);
+
+    // Start video
+    function startVideo() {
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+          document.getElementById('video').srcObject = stream;
+          trackHeadMovement();
+        })
+        .catch(err => console.error(err));
+    }
+
+    // Handle reference photo upload
+    document.getElementById('referenceUpload').addEventListener('change', async (e) => {
+      const imgFile = e.target.files[0];
+      if (!imgFile) return;
+      const img = await faceapi.bufferToImage(imgFile);
+      document.getElementById('referenceImg').src = img.src;
+      const detection = await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();
+      if (detection) referenceDescriptor = detection.descriptor;
+    });
+
+    // Track head movement for liveness
+    async function trackHeadMovement() {
+      const video = document.getElementById('video');
+      let initialX = null;
+
+      setInterval(async () => {
+        const detection = await faceapi.detectSingleFace(video).withFaceLandmarks().withFaceDescriptor();
+        if (detection) {
+          selfieDescriptor = detection.descriptor;
+          const nose = detection.landmarks.getNose();
+          if (nose.length > 0) {
+            const xPos = nose[3].x; // Nose tip x-position
+            if (initialX === null) initialX = xPos;
+            if (Math.abs(xPos - initialX) > 50) { // Head turned
+              headMoved = true;
+              document.getElementById('status').innerText = "Head movement detected ✅";
+            }
+          }
+        }
+      }, 500);
+    }
+
+    // Verify faces
+    document.getElementById('verifyBtn').addEventListener('click', () => {
+      if (!referenceDescriptor || !selfieDescriptor) {
+        document.getElementById('result').innerText = "Please upload reference photo and wait for head movement.";
+        return;
+      }
+
+      if (!headMoved) {
+        document.getElementById('result').innerText = "Liveness check failed ❌ (Turn your head)";
+        return;
+      }
+
+      const distance = faceapi.euclideanDistance(referenceDescriptor, selfieDescriptor);
+      if (distance < 0.6) {
+        document.getElementById('result').innerText = "Verified ✅";
+      } else {
+        document.getElementById('result').innerText = "Rejected ❌";
+      }
+    });
+  </script>
+</body>
+</html>

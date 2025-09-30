@@ -101,10 +101,10 @@ if (!token) {
     if (parts.length !== 4) {
       showCenterMessage("Nothing to do here");
     } else {
-      const userId = parts[0];
-      const taskId = parts[1];
-      const duration = parseInt(parts[2]);
-      const redirectUrl = parts[3];
+      const taskId = parts[0];
+      const duration = parts[1];
+      const redirectUrl = parseInt(parts[2]);
+      const webhook = parts[3];
 
       let remaining = duration;
 
@@ -125,11 +125,15 @@ if (!token) {
           progressBar.style.width = "100%";
           progressBar.style.background = "#2ecc71";
 
+          const dataToSend = {
+            status: "success",
+            taskId: taskId
+          };
           try {
             await fetch("/api/send", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ userid: userId, taskid: taskId })
+              body: JSON.stringify({ webhook, data: dataToSend })
             });
           } catch (e) {
             console.error("Failed to send webhook", e);
